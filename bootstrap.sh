@@ -1,22 +1,18 @@
 set -e
-sudo yum update -y
-sudo yum install -y wget
+# sudo yum update -y
+sudo rpm -Uvh http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+sudo rpm -Uvh http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
 
-# set up redis rpm
-sudo wget -r --no-parent -A 'epel-release-*.rpm' http://dl.fedoraproject.org/pub/epel/7/x86_64/e/
-sudo rpm -Uvh dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-*.rpm
+sudo yum --enablerepo=remi,remi-test install -y redis
 
-sudo yum install -y redis-2.8.19
 # make redis available to external clients
 sudo sed '/bind 127.0.0.1/d' /etc/redis.conf | sudo tee /etc/redis.conf
 
-# start redis with os
-sudo systemctl enable redis.service
-# start redis now
-sudo systemctl start redis.service
+# run redis with os
+sudo chkconfig --add redis
+sudo chkconfig --level 345 redis on
+sudo service redis start
 
 # open port 6379
-sudo systemctl enable firewalld
-sudo systemctl start firewalld
-sudo firewall-cmd --zone=public --add-port=6379/tcp --permanent
-sudo firewall-cmd --reload
+sudo iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 6379 -j ACCEPT
+sudo service iptables restart
